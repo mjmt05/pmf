@@ -9,16 +9,24 @@ class VI:
     """VI stores the variational distribution parameters and
     contains all the methods to perform inference."""
 
-    def __init__(self, data, model, args):
+    def __init__(
+        self, data, model, seed=None, convergence_threshold=0.00001, max_iterations=500
+    ):
         """The constructor for the VI class.
 
-        Parameters:
+        Arguments:
         data (object): The data class which contains the edgelist.
         model (object): The model class object.
-        args (object): Argument options with prior parameters.
+        seed (int): Seed the numpy random number generator. This will guarantee identical results
+                    each run.
+        convergence_threshold (float): Threshold for convergence based on the relative difference
+                                       between two consecutive values of the ELBO.
+        max_iterations (int): Max iterations to allow fo the variational inference algorithm.
+                              Algorithm will exit when either convergence threshold or max
+                              iterations is reached.
         """
-        if args.seed is not None:
-            np.random.seed(args.seed)
+        if seed is not None:
+            np.random.seed(seed)
         self._model = model
         self._lambda_user = self._model.alpha_shape_prior * np.ones(
             (self._model.nusers, self._model.latent_dimensions)
@@ -29,30 +37,28 @@ class VI:
         )
         self._digamma_lambda_item = digamma(self._lambda_item)
         self._mu_user = np.random.gamma(
-            args.zeta_alpha_shape,
-            1.0 / args.zeta_alpha_rate,
+            self._model.zeta_alpha_shape_prior,
+            1.0 / self._model.zeta_alpha_rate_prior,
             size=(self._model.nusers, self._model.latent_dimensions),
         )
         self._log_mu_user = np.log(self._mu_user)
         self._mu_item = np.random.gamma(
-            args.zeta_beta_shape,
-            1.0 / args.zeta_beta_rate,
+            self._model.zeta_beta_shape_prior,
+            1.0 / self._model.zeta_beta_rate_prior,
             size=(self._model.nitems, self._model.latent_dimensions),
         )
         self._log_mu_item = np.log(self._mu_item)
-        self._zeta_alpha_rate_prior = args.zeta_alpha_rate
-        self._zeta_beta_rate_prior = args.zeta_beta_rate
-        self._zeta_alpha_shape_prior = args.zeta_alpha_shape
-        self._zeta_beta_shape_prior = args.zeta_beta_shape
-        self._xi_user = self._zeta_alpha_rate_prior * np.ones(self._model.nusers)
-        self._xi_item = self._zeta_beta_rate_prior * np.ones(self._model.nitems)
+        self._xi_user = self._model.zeta_alpha_rate_prior * np.ones(self._model.nusers)
+        self._xi_item = self._model.zeta_beta_rate_prior * np.ones(self._model.nitems)
         self._nu_user = (
-            args.zeta_alpha_shape + self._model.latent_dimensions * args.alpha_shape
+            self._model.zeta_alpha_shape_prior
+            + self._model.latent_dimensions * self._model.alpha_shape_prior
         )
         self._nu_item = (
-            args.zeta_beta_shape + self._model.latent_dimensions * args.beta_shape
+            self._model.zeta_beta_shape_prior
+            + self._model.latent_dimensions * self._model.beta_shape_prior
         )
-        self._berpo = args.berpo
+        self._berpo = self._model.berpo
         self._sum_over_items = np.zeros(
             (self._model.nusers, self._model.latent_dimensions)
         )
@@ -61,8 +67,8 @@ class VI:
         )
         self._edgelist = data.get_edge_list()
         self._poisson_rate = []
-        self._convergence_criterion = args.convergence_criterion
-        self._max_its = args.max_iterations
+        self._convergence_criterion = convergence_threshold
+        self._max_its = max_iterations
 
     def _update_multinomial_parameters(self):
         """Update the multinomial variational parameters theta and xi."""
@@ -100,7 +106,7 @@ class VI:
             (self._lambda_item / self._mu_item).sum(axis=0),
         )
         self._log_mu_user = np.log(self._mu_user)
-        self._xi_user = self._zeta_alpha_rate_prior + (
+        self._xi_user = self._model.zeta_alpha_rate_prior + (
             self._lambda_user / self._mu_user
         ).sum(axis=1)
 
@@ -113,7 +119,7 @@ class VI:
             (self._lambda_user / self._mu_user).sum(axis=0),
         )
         self._log_mu_item = np.log(self._mu_item)
-        self._xi_item = self._zeta_beta_rate_prior + (
+        self._xi_item = self._model.zeta_beta_rate_prior + (
             self._lambda_item / self._mu_item
         ).sum(axis=1)
 
@@ -137,8 +143,8 @@ class VI:
 
     def _elbo_hp_item_terms(self, log_xi, nu_d_xi):
         """Terms related to the item hyper parameters for the elbo."""
-        elbo_term = -np.sum(self._zeta_beta_shape_prior * log_xi)
-        elbo_term -= np.sum(self._zeta_beta_rate_prior * nu_d_xi)
+        elbo_term = -np.sum(self._model.zeta_beta_shape_prior * log_xi)
+        elbo_term -= np.sum(self._model.zeta_beta_rate_prior * nu_d_xi)
         return elbo_term
 
     def _elbo_item_terms(self):
@@ -167,8 +173,8 @@ class VI:
 
     def _elbo_hp_user_terms(self, log_xi, nu_d_xi):
         """Terms related to the user hyper parameters for the elbo."""
-        elbo_term = -np.sum(self._zeta_alpha_shape_prior * log_xi)
-        elbo_term -= np.sum(self._zeta_alpha_rate_prior * nu_d_xi)
+        elbo_term = -np.sum(self._model.zeta_alpha_shape_prior * log_xi)
+        elbo_term -= np.sum(self._model.zeta_alpha_rate_prior * nu_d_xi)
         return elbo_term
 
     def _elbo_user_terms(self):
