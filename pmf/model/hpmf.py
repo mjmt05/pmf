@@ -61,6 +61,8 @@ class HPMF:
                     print(",".join([user] + [str(i) for i in row]), file=falpha)
 
         if self.beta is None:
+            print("Beta has not been set.", file=sys.stderr)
+        else:
             with open(outpath + "beta.txt", "w", encoding="utf-8") as fbeta:
                 for idx, row in enumerate(self.beta):
                     if item_maps:
