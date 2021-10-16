@@ -10,22 +10,40 @@ class HPMF:
         nusers,
         nitems,
         latent_dimensions=3,
-        alpha_shape_prior=1,
-        beta_shape_prior=1,
+        bernoulli_poisson=True,
+        **kwargs
     ):
         """The constucter for the HPMF class.
 
         Arguments:
             nusers (int): Total number of users.
             nitems (int): Total number of items.
-            latent_dimensions(int): Number of latent dimensions.
-            alpha_shape_prior (float): Prior for the user latent parameters.
-            beta_shape_prior (float): Prior for the item latent parameters.
+            latent_dimensions (int): Number of latent dimensions.
+            bernoulli_poisson (bool): Use Bernoulli-Poisson version of the model.
+
+        Keyword Arguments:
+            alpha_shape_prior (float): Shape parameter for the gamma prior for the user latent
+                                       parameters. Default 1.0.
+            beta_shape_prior (float): Shape parameter for the gamma prior for the item latent
+                                      parameters. Default 1.0.
+            zeta_alpha_shape (float): Shape parameter for the gamma hyperprior for alpha.
+                                      Default 1.0.
+            zeta_beta_shape (float): Shape parameter for the gamma hyperprior for beta.
+                                     Default 1.0.
+            zeta_alpha_rate (float): Rate parameter for the gamma hyperprior for alpha.
+                                     Default 0.1.
+            zeta_beta_rate (float): Rate parameter for the gamma hyperprior for beta.
+                                    Default 0.1.
         """
-        self.alpha_shape_prior = alpha_shape_prior
+        self.alpha_shape_prior = kwargs.get("alpha_shape_prior", 1.0)
         self.alpha = None
-        self.beta_shape_prior = beta_shape_prior
+        self.beta_shape_prior = kwargs.get("beta_shape_prior", 1.0)
         self.beta = None
+        self.berpo = bernoulli_poisson
+        self.zeta_alpha_shape_prior = kwargs.get("zeta_alpha_shape", 1.0)
+        self.zeta_beta_shape_prior = kwargs.get("zeta_beta_shape", 1.0)
+        self.zeta_alpha_rate_prior = kwargs.get("zeta_alpha_rate", 0.1)
+        self.zeta_beta_rate_prior = kwargs.get("zeta_beta_rate", 0.1)
         self.latent_dimensions = latent_dimensions
         self.nusers = nusers
         self.nitems = nitems

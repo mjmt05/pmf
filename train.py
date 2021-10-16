@@ -119,11 +119,16 @@ def main():
     hpmf = HPMF(
         data.get_number_users(),
         data.get_number_items(),
-        args.latent_factors,
-        args.alpha_shape,
-        args.beta_shape,
+        latent_dimensions=args.latent_factors,
+        bernoulli_poisson=args.berpo,
+        alpha_shape_prior= args.alpha_shape,
+        beta_shape_prior= args.beta_shape,
+        zeta_alpha_shape= args.zeta_alpha_shape,
+        zeta_beta_shape= args.zeta_beta_shape,
+        zeta_alpha_rate= args.zeta_alpha_rate,
+        zeta_beta_rate= args.zeta_beta_rate,
     )
-    inference = VI(data, hpmf, args)
+    inference = VI(data, hpmf, args.seed, args.convergence_criterion, args.max_iterations)
     inference.run_algorithm()
     hpmf.write_model_state(
         args.output_directory, data.get_user_id_mappings(), data.get_item_id_mappings()
