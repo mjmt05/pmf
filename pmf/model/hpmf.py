@@ -1,17 +1,15 @@
 """Model class for heirarchical poisson matrix factorization."""
 import sys
+import numpy as np
+from scipy.stats import poisson
+
 class HPMF:
     """HPMF stores the parameters and methods for the heirarchical Poisson
     matrix factorization model.
     TODO: Specify paper"""
 
     def __init__(
-        self,
-        nusers,
-        nitems,
-        latent_dimensions=3,
-        bernoulli_poisson=True,
-        **kwargs
+        self, nusers, nitems, latent_dimensions=3, bernoulli_poisson=True, **kwargs
     ):
         """The constucter for the HPMF class.
 
@@ -44,6 +42,8 @@ class HPMF:
         self.zeta_beta_shape_prior = kwargs.get("zeta_beta_shape", 1.0)
         self.zeta_alpha_rate_prior = kwargs.get("zeta_alpha_rate", 0.1)
         self.zeta_beta_rate_prior = kwargs.get("zeta_beta_rate", 0.1)
+        self.zeta_alpha = None
+        self.zeta_beta = None
         self.latent_dimensions = latent_dimensions
         self.nusers = nusers
         self.nitems = nitems
@@ -56,6 +56,50 @@ class HPMF:
         item (int): Id for item.
         count (int): Count for user and item.
         """
+        poisson_rate = sum(self.alpha[user] * self.beta[item])
+        if self.berpo:
+            return 1 - np.exp(-poisson_rate)
+
+        return poisson.pmf(count, poisson_rate)
+
+    def _simulate_alpha(self):
+        self.zeta_alpha = np.random.gamma(
+            self.zeta_alpha_shape_prior, 1.0 / self.zeta_alpha_rate_prior, self.nusers
+        )
+        self.alpha = np.full((self.nusers, self.latent_dimensions), 0.0)
+        for i in range(self.nusers):
+            self.alpha[i, :] = np.random.gamma(
+                self.alpha_shape_prior, self.zeta_alpha[i], self.latent_dimensions
+            )
+
+    def _simulate_beta(self):
+        self.zeta_beta = np.random.gamma(
+            self.zeta_beta_shape_prior, 1.0 / self.zeta_beta_rate_prior, self.nitems
+        )
+        self.beta = np.full((self.nitems, self.latent_dimensions), 0.0)
+        for i in range(self.nusers):
+            self.beta[i, :] = np.random.gamma(
+                self.beta_shape_prior, self.zeta_beta[i], self.latent_dimensions
+            )
+
+    def simulate_model_parameters(self):
+        """Randomly sample parameters from the prior distributions."""
+        self._simulate_alpha()
+        self._simulate_beta()
+
+    def simulate_counts(self):
+        """Simulate counts from the prior.
+
+        Returns: A numpy matrix of size (nusers, nitems) with counts."""
+        if self.alpha is None:
+            self._simulate_alpha()
+        if self.beta is None:
+            self._simulate_beta()
+        poisson_rate = self.alpha @ self.beta.T
+        counts = np.random.poisson(poisson_rate)
+        if self.berpo:
+            return np.matrix(np.matrix(counts, dtype=bool), dtype=int)
+        return counts
 
     def write_model_state(self, outpath, user_maps=None, item_maps=None):
         """Write the user and item latent parameters to outpath with schema
