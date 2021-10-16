@@ -1,9 +1,9 @@
 #! /usr/bin/env python3
 import sys
 import argparse
-from data import Data
-from model.hpmf import HPMF
-from vi import VI
+from pmf.data.datastore import Data
+from pmf.model.hpmf import HPMF
+from pmf.vi.vi import VI
 
 
 def main():
