@@ -52,8 +52,8 @@ class HPMF:
         """Return probability mass function for user, item and count.
 
         Arguments:
-        user (int): Id for user.
-        item (int): Id for item.
+        user (int): Integer id for user.
+        item (int): Integer id for item.
         count (int): Count for user and item.
         """
         poisson_rate = sum(self.alpha[user] * self.beta[item])
@@ -69,7 +69,7 @@ class HPMF:
         self.alpha = np.full((self.nusers, self.latent_dimensions), 0.0)
         for i in range(self.nusers):
             self.alpha[i, :] = np.random.gamma(
-                self.alpha_shape_prior, self.zeta_alpha[i], self.latent_dimensions
+                self.alpha_shape_prior, 1.0 / self.zeta_alpha[i], self.latent_dimensions
             )
 
     def _simulate_beta(self):
@@ -79,7 +79,7 @@ class HPMF:
         self.beta = np.full((self.nitems, self.latent_dimensions), 0.0)
         for i in range(self.nusers):
             self.beta[i, :] = np.random.gamma(
-                self.beta_shape_prior, self.zeta_beta[i], self.latent_dimensions
+                self.beta_shape_prior, 1.0 / self.zeta_beta[i], self.latent_dimensions
             )
 
     def simulate_model_parameters(self):
