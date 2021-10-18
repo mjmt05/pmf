@@ -15,7 +15,8 @@ class Data:
 
         Parameters:
         edgelist_path (str): The filepath for the edgelist with schema user, item, count.
-        edgelist (list): List with each element as (user, item, count).
+        edgelist (list): List with each element as (user, item, optional count). If count
+                         not given set at one.
         userlist (list): A list of user identifiers.
         itemlist (list): A list of item identifiers.
         """
@@ -29,6 +30,8 @@ class Data:
         self.item_hash = {}
         self._item_hash_rev = {}
         self._edge_list = {}
+        userlist_data = None
+        itemlist_data = None
         if edgelist_path is not None:
             edgelist, userlist_data, itemlist_data = self._read_edgelist_from_file(
                 edgelist_path
@@ -51,15 +54,26 @@ class Data:
                 userlist.add(str(user))
                 item = fields[1]
                 itemlist.add(str(item))
-                count = fields[2]
+                count = 1
+                if len(fields) > 2:
+                    count = fields[2]
                 edgelist.append([user, item, count])
         return edgelist, userlist, itemlist
 
     def _parse_edge_list(self, edgelist, userlist, itemlist):
         """Parse edgelist and create integer unique identifiers for the users and items."""
-        self.user_hash = {str(j): i for i, j in enumerate(userlist)}
-        self.item_hash = {str(j): i for i, j in enumerate(itemlist)}
-        for user, item, count in edgelist:
+        if userlist is None:
+            userlist = {edge[0] for edge in edgelist}
+        if itemlist is None:
+            itemlist = {edge[1] for edge in edgelist}
+        self.user_hash = {str(j): i for i, j in enumerate(sorted(userlist))}
+        self.item_hash = {str(j): i for i, j in enumerate(sorted(itemlist))}
+        for edge in edgelist:
+            user = edge[0]
+            item = edge[1]
+            count = 1
+            if len(edge) > 2:
+                count = edge[2]
             self._edge_list[
                 (self.user_hash[str(user)], self.item_hash[str(item)])
             ] = count

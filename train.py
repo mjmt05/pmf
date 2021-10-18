@@ -113,6 +113,7 @@ def main():
         type=int,
         dest="seed",
         help="Seed numpy random number generator with %(dest)s for consistent results.",
+        default=None
     )
     args = commandlineargs.parse_args()
     data = Data(edgelist_path=args.edgelist)
