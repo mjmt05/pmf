@@ -6,43 +6,83 @@ import sys
 class Data:
     """Data stores the edge lists for the PMF model."""
 
-    def __init__(self, edgelist_fp: str):
-        """The constructor for Data class.
+    def __init__(self, edgelist=None, edgelist_path=None, userlist=None, itemlist=None):
+        """The constructor for Data class. Either edgelist or edgelist_path must be specified.
+        If both are provided edgelist_path will take precedence. You can optionally
+        pass in a list of user and item identifiers. The integer identifiers will
+        be created from these lists if provided, allowing user and items with no
+        observed edges.
 
         Parameters:
-        edgelist_fp (str): The filepath for the edgelist.
+        edgelist_path (str): The filepath for the edgelist with schema user, item, count.
+        edgelist (list): List with each element as (user, item, optional count). If count
+                         not given set at one.
+        userlist (list): A list of user identifiers.
+        itemlist (list): A list of item identifiers.
         """
+        if edgelist is None and edgelist_path is None:
+            print(
+                "Either filepath to edgelist or edgelist itself must be provided.",
+                file=sys.stderr,
+            )
         self.user_hash = {}
         self._user_hash_rev = {}
         self.item_hash = {}
         self._item_hash_rev = {}
         self._edge_list = {}
-        self._read_edge_list(edgelist_fp)
+        userlist_data = None
+        itemlist_data = None
+        if edgelist_path is not None:
+            edgelist, userlist_data, itemlist_data = self._read_edgelist_from_file(
+                edgelist_path
+            )
+        if userlist is None:
+            userlist = userlist_data
+        if itemlist is None:
+            itemlist = itemlist_data
 
-    def _read_edge_list(self, edgelist_fp: str):
-        """Read the edge list and create integer unique identifiers for the users and items."""
-        user_counter = 0
-        item_counter = 0
-        with open(edgelist_fp, "r", encoding="utf-8") as edgelist:
-            for line in edgelist:
+        self._parse_edge_list(edgelist, userlist, itemlist)
+
+    def _read_edgelist_from_file(self, edgelist_fp):
+        userlist = set([])
+        itemlist = set([])
+        with open(edgelist_fp, "r", encoding="utf-8") as fhandle:
+            edgelist = []
+            for line in fhandle:
                 fields = line.rstrip("\r\n").split(",")
                 user = fields[0]
+                userlist.add(str(user))
                 item = fields[1]
-                count = fields[2]
-                if user not in self.user_hash:
-                    self.user_hash[user] = user_counter
-                    user_counter += 1
+                itemlist.add(str(item))
+                count = 1
+                if len(fields) > 2:
+                    count = fields[2]
+                edgelist.append([user, item, count])
+        return edgelist, userlist, itemlist
 
-                if item not in self.item_hash:
-                    self.item_hash[item] = item_counter
-                    item_counter += 1
-
-                self._edge_list[(self.user_hash[user], self.item_hash[item])] = count
-            print(
-                f"Read in edge list.\nNumber of users: {len(self.user_hash)} \
-                        \nNumber of items: {len(self.item_hash)}",
-                file=sys.stderr,
-            )
+    def _parse_edge_list(self, edgelist, userlist, itemlist):
+        """Parse edgelist and create integer unique identifiers for the users and items."""
+        if userlist is None:
+            userlist = {edge[0] for edge in edgelist}
+        if itemlist is None:
+            itemlist = {edge[1] for edge in edgelist}
+        self.user_hash = {str(j): i for i, j in enumerate(sorted(userlist))}
+        self.item_hash = {str(j): i for i, j in enumerate(sorted(itemlist))}
+        for edge in edgelist:
+            user = edge[0]
+            item = edge[1]
+            count = 1
+            if len(edge) > 2:
+                count = edge[2]
+            self._edge_list[
+                (self.user_hash[str(user)], self.item_hash[str(item)])
+            ] = count
+        print(
+            f"Read in edge list.\nNumber of users: {len(self.user_hash)} \
+                    \nNumber of items: {len(self.item_hash)}",
+            file=sys.stderr,
+        )
+        print(f"Total number of edges: {len(self._edge_list)}")
         self._user_hash_rev = {v: k for k, v in self.user_hash.items()}
         self._item_hash_rev = {v: k for k, v in self.item_hash.items()}
 
@@ -82,6 +122,7 @@ class Data:
 
     def get_id_for_user(self, user):
         """Return user integer identifier given original identifier."""
+        user = str(user)
         if user not in self.user_hash:
             return None
 
@@ -89,6 +130,7 @@ class Data:
 
     def get_id_for_item(self, item):
         """Return item identifier given original identifier."""
+        item = str(item)
         if item not in self.item_hash:
             return None
 

@@ -113,9 +113,10 @@ def main():
         type=int,
         dest="seed",
         help="Seed numpy random number generator with %(dest)s for consistent results.",
+        default=None
     )
     args = commandlineargs.parse_args()
-    data = Data(args.edgelist)
+    data = Data(edgelist_path=args.edgelist)
     hpmf = HPMF(
         data.get_number_users(),
         data.get_number_items(),

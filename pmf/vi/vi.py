@@ -239,8 +239,7 @@ class VI:
             )
         else:
             print(
-                f"Algorithm reached convergence in {niterations} iterations. \
-                        ELBO at convergence {elbo}",
+                f"Algorithm reached convergence in {niterations} iterations. ELBO at convergence {elbo}",
                 file=sys.stderr,
             )
         self._model.alpha = self._lambda_user / self._mu_user
