@@ -1,6 +1,8 @@
 #! /usr/bin/env python3
 """This module contains all methods to store and read in the edgelist for the PMF package."""
-import sys
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Data:
@@ -21,10 +23,7 @@ class Data:
         itemlist (list): A list of item identifiers.
         """
         if edgelist is None and edgelist_path is None:
-            print(
-                "Either filepath to edgelist or edgelist itself must be provided.",
-                file=sys.stderr,
-            )
+            raise ValueError("Either edgelist or edgelist_path needs to be provided.")
         self.user_hash = {}
         self._user_hash_rev = {}
         self.item_hash = {}
@@ -56,7 +55,7 @@ class Data:
                 itemlist.add(str(item))
                 count = 1
                 if len(fields) > 2:
-                    count = fields[2]
+                    count = int(fields[2])
                 edgelist.append([user, item, count])
         return edgelist, userlist, itemlist
 
@@ -77,12 +76,10 @@ class Data:
             self._edge_list[
                 (self.user_hash[str(user)], self.item_hash[str(item)])
             ] = count
-        print(
-            f"Read in edge list.\nNumber of users: {len(self.user_hash)} \
-                    \nNumber of items: {len(self.item_hash)}",
-            file=sys.stderr,
-        )
-        print(f"Total number of edges: {len(self._edge_list)}")
+        logger.info("Read in edge list")
+        logger.info("Number of users: %s", len(self.user_hash))
+        logger.info("Number of items: %s", len(self.item_hash))
+        logger.info("Total number of edges: %s", len(self._edge_list))
         self._user_hash_rev = {v: k for k, v in self.user_hash.items()}
         self._item_hash_rev = {v: k for k, v in self.item_hash.items()}
 

@@ -1,7 +1,10 @@
 """Model class for heirarchical poisson matrix factorization."""
-import sys
+import logging
 import numpy as np
 from scipy.stats import poisson
+
+logger = logging.getLogger(__name__)
+
 
 class HPMF:
     """HPMF stores the parameters and methods for the heirarchical Poisson
@@ -112,7 +115,7 @@ class HPMF:
             item_maps (dict): Mappings for the integer item ids if it exists.
         """
         if self.alpha is None:
-            print("Alpha has not been set.", file=sys.stderr)
+            logger.warning("Can not write user latent parameters to file as it has not been set.")
         else:
             with open(outpath + "alpha.txt", "w", encoding="utf-8") as falpha:
                 for idx, row in enumerate(self.alpha):
@@ -123,7 +126,7 @@ class HPMF:
                     print(",".join([user] + [str(i) for i in row]), file=falpha)
 
         if self.beta is None:
-            print("Beta has not been set.", file=sys.stderr)
+            logger.warning("Can not write item latent parameters to file as it has not been set.")
         else:
             with open(outpath + "beta.txt", "w", encoding="utf-8") as fbeta:
                 for idx, row in enumerate(self.beta):

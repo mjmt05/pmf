@@ -1,10 +1,10 @@
 #! /usr/bin/env python3
 import sys
+import logging
 import argparse
 from pmf.data.datastore import Data
 from pmf.model.hpmf import HPMF
 from pmf.vi.vi import VI
-
 
 def main():
     """Parses command-line arguments and reads in data and executes inference algorithm."""
@@ -116,6 +116,7 @@ def main():
         default=None
     )
     args = commandlineargs.parse_args()
+    logging.basicConfig(level=logging.INFO)
     data = Data(edgelist_path=args.edgelist)
     hpmf = HPMF(
         data.get_number_users(),
@@ -134,7 +135,6 @@ def main():
     hpmf.write_model_state(
         args.output_directory, data.get_user_id_mappings(), data.get_item_id_mappings()
     )
-
 
 if __name__ == "__main__":
     sys.exit(main())
