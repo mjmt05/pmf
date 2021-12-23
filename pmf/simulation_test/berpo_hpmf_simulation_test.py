@@ -5,6 +5,7 @@ is working correctly and the parameters are specified such that the graph
 is sparse (number of training edges to total possible edges) the AUC for
 the test data should be high."""
 import sys
+import logging
 import itertools
 import argparse
 import numpy as np
@@ -149,6 +150,7 @@ def main():
         default=None,
     )
     args = commandlineargs.parse_args()
+    logging.basicConfig(level=logging.INFO)
     run_simulation(args)
 
 
