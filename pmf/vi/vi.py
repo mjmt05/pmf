@@ -1,8 +1,46 @@
 #! /usr/bin/env python
 """This module performs variational inference on the pmf model."""
-import sys
+import logging
+from tqdm import tqdm
 import numpy as np
 from scipy.special import digamma, gammaln
+
+logger = logging.getLogger(__name__)
+
+
+class LoggingTQDM(tqdm):
+    """Output stream for TQDM which will output to logger module.
+
+    Taken from https://github.com/tqdm/tqdm/issues/313.
+    """
+
+    def __init__(
+        self,
+        *args,
+        log: logging.Logger = None,
+        mininterval: float = 1,
+        bar_format: str = "{desc}{percentage:3.0f}%{r_bar}",
+        desc: str = "progress: ",
+        **kwargs
+    ):
+        self._logger = log
+        super().__init__(
+            *args, mininterval=mininterval, bar_format=bar_format, desc=desc, **kwargs
+        )
+
+    @property
+    def classlogger(self):
+        if self._logger is not None:
+            return self._logger
+        return logger
+
+    def display(self, msg=None, pos=None):
+        if not self.n:
+            # skip progress bar before having processed anything
+            return
+        if not msg:
+            msg = self.__str__()
+        self.classlogger.info("%s", msg)
 
 
 class VI:
@@ -128,7 +166,6 @@ class VI:
         term1 = (self._lambda_user / self._mu_user).sum(axis=0)
         term2 = (self._lambda_item / self._mu_item).sum(axis=0)
         elbo_term = -sum(term1 * term2)
-        # print(elbo_term)
         for (count, theta) in self._poisson_rate:
             if self._berpo:
                 try:
@@ -211,20 +248,19 @@ class VI:
     def _change_in_elbo(self, old_elbo, new_elbo):
         change = (new_elbo - old_elbo) / np.abs(old_elbo)
         if change < 0:
-            print("ELBO is decreasing", file=sys.stderr)
+            raise RuntimeError("ELBO is decreasing, this should not happen.")
         return change
 
     def run_algorithm(self):
         """Run variational inference algorithm until convergence."""
         niterations = 0
         old_elbo = None
-        while niterations < self._max_its:
-            print(f"Iteration Number {niterations}", file=sys.stderr, end="\r")
+        logging.info("Running inference algorithm. Iteration progress:")
+        for _ in LoggingTQDM(range(self._max_its)):
             self._update_multinomial_parameters()
             elbo = self._elbo()
             if niterations > 0:
                 eps = self._change_in_elbo(old_elbo, elbo)
-                # print(f"{eps} {elbo} {old_elbo}", file=sys.stderr)
                 if eps <= self._convergence_criterion:
                     break
             old_elbo = elbo
@@ -233,14 +269,11 @@ class VI:
             niterations += 1
 
         if niterations == self._max_its:
-            print(
-                f"Algorithm did not reach convergence in {self._max_its} iterations.",
-                file=sys.stderr,
+            logger.warning(
+                "Algorithm did not reach convergence in %s iterations.", self._max_its
             )
         else:
-            print(
-                f"Algorithm reached convergence in {niterations} iterations. ELBO at convergence {elbo}",
-                file=sys.stderr,
-            )
+            logger.info("Algorithm reached convergence in %s iterations.", niterations)
+            logger.info("ELBO at convergence %s", elbo)
         self._model.alpha = self._lambda_user / self._mu_user
         self._model.beta = self._lambda_item / self._mu_item
