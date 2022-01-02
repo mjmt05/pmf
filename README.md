@@ -1,10 +1,10 @@
-### pmf
+# pmf
 
 pmf is a python library for performing inference using hierarchical Poisson
-Matrix Factorization, see [Graph link prediction in computer networks using Poisson matrix factorisation]{https://arxiv.org/abs/2001.09456}.
+Matrix Factorization, see [Graph link prediction in computer networks using Poisson matrix factorisation](https://arxiv.org/abs/2001.09456).
 
 ## Dependencies
-pmf requires python 3,7 or higher.
+pmf requires python 3.7 or higher.
 
 ## Installation
 
@@ -18,21 +18,22 @@ pip install .
 
 ## Documentation and usage
 
-# Examples
-Example python script for training a model is provided in the examples folder. Run
+### Examples
+Example python script for training a model is provided in the examples folder
 ```
 ./train.py -h
 ```
-for options. An example edge list file is also provided, to run the script with default arguments
+
+An example edge list file is also provided, to run the script with default arguments
 ```
 ./train.py -f train.txt
 ```
 
-# Simulation Test
+### Simulation Test
 `simulation_test` has a script for simulating from the model, running this will simulate a training and test data set from the model. It performs inference on the training data and assesses predictive performance on the test data set using the area under the ROC curve. 
 
 ## Development
-Use the python script in `regression_test` to validate any changes to the code. Add to the test when implementing to new features.
+Use the python script in `regression_test` to validate any changes to the code. Add to the test when implementing new features.
 
 ## Citing
 
