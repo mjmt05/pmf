@@ -1,0 +1,6 @@
+[packages]
+numpy = "*"
+tqdm = "*"
+scipy = "*"
+scikit_learn = "*"
+pmf = {path = "."}
