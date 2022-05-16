@@ -13,7 +13,7 @@ To install pmf from the source code
 ```
 git clone https://github.com/mjmt05/pmf.git
 cd pmf
-pip install .
+pipenv install .
 ```
 
 ## Documentation and usage
