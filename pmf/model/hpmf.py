@@ -59,6 +59,11 @@ class HPMF:
         item (int): Integer id for item.
         count (int): Count for user and item.
         """
+        if not isinstance(user, int):
+            raise ValueError("User must be of type int.")
+
+        if not isinstance(item, int):
+            raise ValueError("Item must be of type int.")
         poisson_rate = sum(self.alpha[user] * self.beta[item])
         if self.berpo:
             return 1 - np.exp(-poisson_rate)
