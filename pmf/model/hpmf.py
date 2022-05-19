@@ -51,23 +51,32 @@ class HPMF:
         self.nusers = nusers
         self.nitems = nitems
 
-    def pmf(self, user, item, count):
+    def pmf(self, user=None, item=None, count=None):
         """Return probability mass function for user, item and count.
+        If user and item not given returns a matrix with the pmf for the matrix of counts.
+        If count not given sets count to one.
 
         Arguments:
         user (int): Integer id for user.
         item (int): Integer id for item.
         count (int): Count for user and item.
         """
-        if not isinstance(user, int):
+        if user is not None and not isinstance(user, int):
             raise ValueError("User must be of type int.")
 
-        if not isinstance(item, int):
+        if item is not None and not isinstance(item, int):
             raise ValueError("Item must be of type int.")
-        poisson_rate = sum(self.alpha[user] * self.beta[item])
+
+        if user is not None and item is not None:
+            poisson_rate = sum(self.alpha[user] * self.beta[item])
+        else:
+            poisson_rate = self.alpha @ self.beta.T
+
         if self.berpo:
             return 1 - np.exp(-poisson_rate)
 
+        if count is None:
+            count = 1
         return poisson.pmf(count, poisson_rate)
 
     def _simulate_alpha(self):
@@ -120,7 +129,9 @@ class HPMF:
             item_maps (dict): Mappings for the integer item ids if it exists.
         """
         if self.alpha is None:
-            logger.warning("Can not write user latent parameters to file as it has not been set.")
+            logger.warning(
+                "Can not write user latent parameters to file as it has not been set."
+            )
         else:
             with open(outpath + "alpha.txt", "w", encoding="utf-8") as falpha:
                 for idx, row in enumerate(self.alpha):
@@ -131,7 +142,9 @@ class HPMF:
                     print(",".join([user] + [str(i) for i in row]), file=falpha)
 
         if self.beta is None:
-            logger.warning("Can not write item latent parameters to file as it has not been set.")
+            logger.warning(
+                "Can not write item latent parameters to file as it has not been set."
+            )
         else:
             with open(outpath + "beta.txt", "w", encoding="utf-8") as fbeta:
                 for idx, row in enumerate(self.beta):
